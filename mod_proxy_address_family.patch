@@ -1,0 +1,38 @@
+--- proxy_util.c	2012-01-07 00:58:13.000000000 +0800
++++ proxy_util.c	2014-05-07 21:59:16.000000000 +0800
+@@ -2049,6 +2049,17 @@
+     int server_port;
+     apr_status_t err = APR_SUCCESS;
+     apr_status_t uerr = APR_SUCCESS;
++    const char *str_af = apr_table_get(r->subprocess_env, "proxy-address-family");
++    int af = APR_UNSPEC;
++    if(str_af) {
++        if(str_af[0] == '4') {
++            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server, "proxy: ipv4 only");
++            af = APR_INET;
++        }else if(str_af[0] == '6'){
++            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server, "proxy: ipv6 only");
++            af= APR_INET6;
++        }
++    }
+ 
+     /*
+      * Break up the URL to determine the host to connect to
+@@ -2132,7 +2143,7 @@
+         }
+         socket_cleanup(conn);
+         err = apr_sockaddr_info_get(&(conn->addr),
+-                                    conn->hostname, APR_UNSPEC,
++                                    conn->hostname, af,
+                                     conn->port, 0,
+                                     conn->pool);
+     }
+@@ -2150,7 +2161,7 @@
+          * inside dynamic config to force the lookup.
+          */
+         err = apr_sockaddr_info_get(&(worker->cp->addr),
+-                                    conn->hostname, APR_UNSPEC,
++                                    conn->hostname, af,
+                                     conn->port, 0,
+                                     worker->cp->pool);
+         conn->addr = worker->cp->addr;
